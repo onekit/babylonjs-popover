@@ -1,5 +1,7 @@
 # babylonjs-popover
 
+![Example: popovers in game (e.g. +1 apple, +1 diamond)](babylonjs-popover-screenshot.jpg)
+
 Lightweight 3D popover component for Babylon.js: short-lived text in the scene (damage numbers, pickups, etc.).
 
 ## Modes
