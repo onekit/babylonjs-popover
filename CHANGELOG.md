@@ -1,5 +1,8 @@
 # Changelog
 
+## 0.0.5
+- Keywords
+
 ## 0.0.4
 
 - **Internal refactor (DRY, KISS):** config resolution moved to `getConfig()` in `PopoverConfig`; `Popover.configure()` uses a single loop over runtime keys instead of repeated `if` blocks.
