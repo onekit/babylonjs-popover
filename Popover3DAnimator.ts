@@ -1,5 +1,5 @@
 import { AbstractMesh, Scene, StandardMaterial, Vector3 } from 'babylonjs'
-import { POPOVER_CONFIG } from './PopoverConfig'
+import { POPOVER_CONFIG, popoverRuntimeOverrides } from './PopoverConfig'
 
 /**
  * Popover3DAnimator - animates 3D popover mesh: fade out, move up, scale.
@@ -14,15 +14,20 @@ export class Popover3DAnimator {
     const startPosition = mesh.position.clone()
     const startScale = mesh.scaling.x
 
-    const endAlpha = 0
-    const endPosition = startPosition.add(
-      new Vector3(0, POPOVER_CONFIG.ANIMATION_OFFSET_Y_3D ?? 1.5, 0),
-    )
-    const endScale = startScale * (POPOVER_CONFIG.SCALE_FACTOR_3D ?? 1.2)
+    const offsetY =
+      popoverRuntimeOverrides.animationOffsetY3D ?? POPOVER_CONFIG.ANIMATION_OFFSET_Y_3D ?? 1.5
+    const scaleFactor =
+      popoverRuntimeOverrides.scaleFactor3D ?? POPOVER_CONFIG.SCALE_FACTOR_3D ?? 1.2
+    const speed3D =
+      popoverRuntimeOverrides.animationSpeed3D ??
+      POPOVER_CONFIG.ANIMATION_SPEED_3D ??
+      POPOVER_CONFIG.ANIMATION_SPEED
 
-    const duration =
-      POPOVER_CONFIG.ANIMATION_STEPS *
-      (POPOVER_CONFIG.ANIMATION_SPEED_3D ?? POPOVER_CONFIG.ANIMATION_SPEED)
+    const endAlpha = 0
+    const endPosition = startPosition.add(new Vector3(0, offsetY, 0))
+    const endScale = startScale * scaleFactor
+
+    const duration = POPOVER_CONFIG.ANIMATION_STEPS * speed3D
 
     return this.animate(
       mesh,
@@ -50,8 +55,12 @@ export class Popover3DAnimator {
   ): Promise<void> {
     return new Promise((resolve) => {
       const startTime = performance.now()
-      const fadeStart = POPOVER_CONFIG.ALPHA_FADE_START_3D ?? 0.6
-      const fadeDuration = POPOVER_CONFIG.ALPHA_FADE_DURATION_3D ?? 600
+      const fadeStart =
+        popoverRuntimeOverrides.alphaFadeStart3D ?? POPOVER_CONFIG.ALPHA_FADE_START_3D ?? 0.6
+      const fadeDuration =
+        popoverRuntimeOverrides.alphaFadeDuration3D ??
+        POPOVER_CONFIG.ALPHA_FADE_DURATION_3D ??
+        600
       const fadeStartTime = duration * fadeStart
       const fadeEndTime = Math.min(fadeStartTime + fadeDuration, duration)
 

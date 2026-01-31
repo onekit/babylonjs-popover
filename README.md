@@ -1,12 +1,11 @@
 # babylonjs-popover
 
-Lightweight 3D and 2D popover components for Babylon.js: short-lived text above the action (damage numbers, pickups, etc.).
+Lightweight 3D popover component for Babylon.js: short-lived text in the scene (damage numbers, pickups, etc.).
 
 ## Modes
 
-- **2D (screen-space)** – fullscreen UI text at the bottom (Babylon.js GUI).
-- **3D Billboard** – text in the scene that always faces the camera.
-- **3D Diegetic** – text in the scene with fixed orientation (vertical to ground, faces camera at creation time). Use `Popover3DPositioningMode.DIEGETIC` or `Popover3DPositioningMode.VERTICAL`.
+- **3D Billboard** – text in the scene that always faces the camera. Use `Popover3DPositioningMode.BILLBOARD`.
+- **3D Vertical** – text in the scene, upright (vertical to ground); rotates only around Y to face camera at creation, then stays fixed. Use `Popover3DPositioningMode.VERTICAL`.
 
 ## Install
 
@@ -18,7 +17,7 @@ yarn add babylonjs-popover
 
 ## Usage
 
-### 3D popover (Billboard or Diegetic)
+### 3D popover (Billboard or Vertical)
 
 ```typescript
 import Popover, { Popover3DPositioningMode } from 'babylonjs-popover'
@@ -29,7 +28,7 @@ const popover = Popover.getInstance()
 // Billboard: always faces the camera
 await popover.showText3D('-10%', scene, position, 'rgba(255,80,80,0.9)', 'rgba(0,0,0,0.85)', 2)
 
-// Diegetic: in-world, fixed orientation
+// Vertical: upright, fixed orientation (Y-only rotation at creation)
 await popover.showText3D(
   '+1 Apple',
   scene,
@@ -37,25 +36,8 @@ await popover.showText3D(
   'rgba(200,208,198,0.95)',
   'rgba(0,0,0,0.85)',
   2,
-  Popover3DPositioningMode.DIEGETIC
+  Popover3DPositioningMode.VERTICAL
 )
-```
-
-### 2D popover (screen-space)
-
-```typescript
-import Popover from 'babylonjs-popover'
-
-const popover = Popover.getInstance()
-await popover.showText('Damage -10%', 'rgba(205,205,205,0.78)', 'rgba(0,0,0,0.78)', 3)
-```
-
-### Optional: notify when a panel is created (e.g. to keep cursor on top)
-
-```typescript
-popover.setOnPanelCreated((panelName) => {
-  // Your UI layer manager, e.g. CustomCursor.ensureOnTop()
-})
 ```
 
 ### Project-wide defaults (font, size)
@@ -82,55 +64,43 @@ Width is measured with `CanvasRenderingContext2D.measureText()` for the actual f
 
 ```typescript
 Popover.configure({
-  fontFamily: 'Jingleberry',
+  fontFamily: 'Helvetica',
   textureWidthPaddingFactor: 1.3,  // e.g. 30% extra width
   // texture3DMinWidth: 256,
   // texture3DMaxWidth: 1024,
 })
 ```
 
-## Local development (test without publishing to npm)
+### Configure: 3D animation and rendering
 
-**Option A – `file:` dependency and same repo parent in Docker**
+All 3D defaults from `POPOVER_CONFIG` can be overridden via `Popover.configure()` (call before `getInstance()`). Example with common 3D options:
 
-1. Put `babylonjs-popover` next to your app (e.g. `your-app/` and `your-app/../babylonjs-popover/`).
-2. In your app’s `package.json`: `"babylonjs-popover": "file:../babylonjs-popover"`.
-3. In Docker, mount the parent so both paths exist, e.g. in `docker-compose.yml`:
-   ```yaml
-   volumes:
-     - .:/usr/src/app
-     - ../babylonjs-popover:/usr/src/babylonjs-popover
-   ```
-   and in `package.json` use `"file:/usr/src/babylonjs-popover"` only for local/Docker runs, or keep `file:../babylonjs-popover` and mount parent: `- ..:/usr/src` with `working_dir: /usr/src/app`.
+```typescript
+import Popover, { Popover3DPositioningMode } from 'babylonjs-popover'
 
-**Option B – `yarn link` (host only, not inside Docker)**
+Popover.configure({
+  fontFamily: 'Helvetica',
+  fontSize: 24,
+  positioningMode3D: Popover3DPositioningMode.VERTICAL,
+  // 3D animation
+  animationOffsetY3D: 3.5,      // vertical offset (world units) during fade-out
+  scaleFactor3D: 1.2,            // end scale multiplier
+  animationSpeed3D: 40,          // ms per animation step
+  alphaFadeStart3D: 0.7,         // start fade at 70% of duration (0–1)
+  alphaFadeDuration3D: 800,     // fade duration in ms
+  // 3D rendering
+  textureAlpha3D: 0.8,
+  planeBaseHeight3D: 1,
+  renderingGroupId3D: 2,
+  // texture size (if needed)
+  textureWidthPaddingFactor: 1.2,
+  texture3DMinWidth: 256,
+  texture3DMaxWidth: 1024,
+})
 
-```bash
-# In babylonjs-popover
-yarn link
-
-# In your app (on the host)
-yarn link babylonjs-popover
+const popover = Popover.getInstance()
 ```
 
-Then run your app on the host (e.g. `yarn dev`). To switch back to the published package: `yarn unlink babylonjs-popover` and `yarn install`.
+## License
 
-## API
-
-- `Popover.configure({ fontFamily?, fontSize?, textureWidthPaddingFactor?, texture3DMinWidth?, texture3DMaxWidth? })` – set project-wide defaults (call before `getInstance()`).
-- `Popover.getInstance(fontFamily?)` – singleton.
-- `showText(text, color?, outlineColor?, outlineWidth?)` – 2D fullscreen popover (requires `babylonjs-gui`).
-- `showText3D(text, scene, position, color?, outlineColor?, outlineWidth?, positioningMode?)` – 3D popover; `positioningMode`: `BILLBOARD` (default) or `DIEGETIC` / `VERTICAL`.
-- `setOnPanelCreated(callback?)` – called when 2D panel is created (for layer ordering).
-- `setFontFamily`, `setFontSize`, `getFontFamily`, `getFontSize`, `dispose`.
-
-## Exports
-
-- `Popover` (default), `PopoverRenderer`, `PopoverAnimator`, `PopoverQueue`
-- `Popover3DRenderer`, `Popover3DAnimator`
-- `POPOVER_CONFIG`, `Popover3DPositioningMode`, `PopoverAnimationConfig`, `OnPanelCreatedCallback`
-
-## Dependencies
-
-- `babylonjs` ^7
-- `babylonjs-gui` ^7 (for 2D popover only)
+This project is licensed under the **Apache License 2.0**.

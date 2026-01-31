@@ -37,7 +37,7 @@ export class Popover3DRenderer {
     color: string,
     outlineColor: string,
     outlineWidth: number,
-    positioningMode: Popover3DPositioningMode = POPOVER_CONFIG.POSITIONING_MODE_3D,
+    positioningMode: Popover3DPositioningMode | 'billboard' | 'vertical' = POPOVER_CONFIG.POSITIONING_MODE_3D,
   ): AbstractMesh {
     const textureSize = this.calculateTextureSize(text, fontFamily, fontSize)
 
@@ -52,7 +52,8 @@ export class Popover3DRenderer {
     this.material.useAlphaFromDiffuseTexture = true
     this.material.emissiveTexture = this.texture
     this.material.emissiveColor = new Color3(1, 1, 1)
-    this.material.alpha = POPOVER_CONFIG.TEXTURE_ALPHA_3D ?? 0.6
+    this.material.alpha =
+      popoverRuntimeOverrides.textureAlpha3D ?? POPOVER_CONFIG.TEXTURE_ALPHA_3D ?? 0.6
     this.material.backFaceCulling = false
     this.material.disableLighting = true
     this.material.alphaMode = Engine.ALPHA_COMBINE
@@ -67,17 +68,21 @@ export class Popover3DRenderer {
     this.mesh.position = position.clone()
     this.mesh.material = this.material
 
-    if (positioningMode === Popover3DPositioningMode.BILLBOARD) {
-      this.mesh.billboardMode = 7 // BILLBOARDMODE_ALL
-    } else if (
-      positioningMode === Popover3DPositioningMode.DIEGETIC ||
-      positioningMode === Popover3DPositioningMode.VERTICAL
-    ) {
-      this.mesh.billboardMode = 0
-      this.rotateToFaceCamera(scene, this.mesh, position)
+    const mode = String(positioningMode)
+    const isBillboard = mode === 'billboard'
+    const isVertical = mode === 'vertical'
+
+    if (isBillboard) {
+      this.mesh.billboardMode = AbstractMesh.BILLBOARDMODE_ALL
+    } else {
+      this.mesh.billboardMode = AbstractMesh.BILLBOARDMODE_NONE
+      if (isVertical) {
+        this.rotateToFaceCameraVertical(scene, this.mesh, position)
+      }
     }
 
-    this.mesh.renderingGroupId = POPOVER_CONFIG.RENDERING_GROUP_ID_3D ?? 2
+    this.mesh.renderingGroupId =
+      popoverRuntimeOverrides.renderingGroupId3D ?? POPOVER_CONFIG.RENDERING_GROUP_ID_3D ?? 2
 
     return this.mesh
   }
@@ -139,7 +144,8 @@ export class Popover3DRenderer {
   }
 
   private calculatePlaneSize(textureSize: Popover3DTextureSize): { width: number; height: number } {
-    const baseHeight = (POPOVER_CONFIG.PLANE_BASE_HEIGHT_3D ?? 1) * 3
+    const baseHeight =
+      (popoverRuntimeOverrides.planeBaseHeight3D ?? POPOVER_CONFIG.PLANE_BASE_HEIGHT_3D ?? 1) * 3
     const aspectRatio = textureSize.width / textureSize.height
     return {
       width: baseHeight * aspectRatio,
@@ -192,12 +198,14 @@ export class Popover3DRenderer {
     return Math.pow(2, Math.ceil(Math.log(value) / Math.log(2)))
   }
 
-  private rotateToFaceCamera(scene: Scene, mesh: AbstractMesh, position: Vector3): void {
+  /** Vertical: rotate only around Y so the plane is upright and faces camera direction in the horizontal plane. */
+  private rotateToFaceCameraVertical(scene: Scene, mesh: AbstractMesh, position: Vector3): void {
     const camera = scene.activeCamera
     if (!camera) return
 
-    const direction = camera.position.subtract(position)
+    const direction = camera.position.clone().subtract(position)
     const angleY = Math.atan2(direction.x, direction.z) + Math.PI
     mesh.rotation.y = angleY
   }
+
 }

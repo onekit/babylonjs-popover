@@ -1,21 +1,16 @@
-// 3D popover positioning modes: Billboard (always face camera) or Diegetic (in-world, fixed orientation)
+// 3D popover positioning modes: Billboard (always face camera) or Vertical (upright, Y-only rotation at creation)
 export enum Popover3DPositioningMode {
   BILLBOARD = 'billboard',
-  /** Diegetic: in-world, fixed orientation (faces camera at creation time). */
-  DIEGETIC = 'diegetic',
-  /** Alias for DIEGETIC: vertical to ground, fixed orientation. */
+  /** Vertical: plane upright (vertical to ground), rotates only around Y to face camera at creation, then stays fixed. */
   VERTICAL = 'vertical',
 }
 
-// Configuration constants for Popover components
+// Configuration constants for 3D popover
 export const POPOVER_CONFIG = {
   DEFAULT_FONT_SIZE: 22,
-  DEFAULT_FONT_FAMILY: 'open sans',
+  DEFAULT_FONT_FAMILY: 'Helvetica',
   ANIMATION_STEPS: 24,
-  PIXEL_STEP: 2,
-  FONT_SIZE_STEP: 0.4,
   ANIMATION_SPEED: 40,
-  PADDING_BOTTOM: '35%',
   // 3D popover defaults
   ANIMATION_OFFSET_Y_3D: 2.8,
   SCALE_FACTOR_3D: 1.4,
@@ -34,19 +29,17 @@ export const POPOVER_CONFIG = {
   TEXTURE_3D_MAX_WIDTH: 1024,
 } as const
 
-/** Runtime overrides (e.g. from Popover.configure()). Used by renderers. */
+/** Runtime overrides (e.g. from Popover.configure()). Used by renderers and animators. */
 export const popoverRuntimeOverrides: {
   textureWidthPaddingFactor?: number
   texture3DMinWidth?: number
   texture3DMaxWidth?: number
+  animationOffsetY3D?: number
+  scaleFactor3D?: number
+  planeBaseHeight3D?: number
+  renderingGroupId3D?: number
+  textureAlpha3D?: number
+  animationSpeed3D?: number
+  alphaFadeStart3D?: number
+  alphaFadeDuration3D?: number
 } = {}
-
-export interface PopoverAnimationConfig {
-  startAlpha: number
-  endAlpha: number
-  startPadding: number
-  endPadding: number
-  startFontSize: number
-  endFontSize: number
-  duration: number
-}
