@@ -1,5 +1,8 @@
 # Changelog
 
+## 0.0.7
+- Make repo public
+
 ## 0.0.5
 - Keywords
 
