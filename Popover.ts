@@ -1,6 +1,4 @@
 import { Scene, Vector3 } from 'babylonjs'
-import { PopoverRenderer } from './PopoverRenderer'
-import { PopoverAnimator } from './PopoverAnimator'
 import { PopoverQueue } from './PopoverQueue'
 import {
   POPOVER_CONFIG,
@@ -17,31 +15,42 @@ export interface PopoverConfigureOptions {
   textureWidthPaddingFactor?: number
   texture3DMinWidth?: number
   texture3DMaxWidth?: number
+  /** Default 3D positioning: BILLBOARD (always face camera) or VERTICAL (upright, Y-only at creation). */
+  positioningMode3D?: Popover3DPositioningMode
+  /** 3D animation: vertical offset (world units). Default from POPOVER_CONFIG.ANIMATION_OFFSET_Y_3D. */
+  animationOffsetY3D?: number
+  /** 3D animation: scale factor at end. Default from POPOVER_CONFIG.SCALE_FACTOR_3D. */
+  scaleFactor3D?: number
+  /** 3D plane base height. Default from POPOVER_CONFIG.PLANE_BASE_HEIGHT_3D. */
+  planeBaseHeight3D?: number
+  /** 3D rendering group id. Default from POPOVER_CONFIG.RENDERING_GROUP_ID_3D. */
+  renderingGroupId3D?: number
+  /** 3D texture alpha. Default from POPOVER_CONFIG.TEXTURE_ALPHA_3D. */
+  textureAlpha3D?: number
+  /** 3D animation speed (ms per step). Default from POPOVER_CONFIG.ANIMATION_SPEED_3D. */
+  animationSpeed3D?: number
+  /** 3D fade start (0–1 of duration). Default from POPOVER_CONFIG.ALPHA_FADE_START_3D. */
+  alphaFadeStart3D?: number
+  /** 3D fade duration (ms). Default from POPOVER_CONFIG.ALPHA_FADE_DURATION_3D. */
+  alphaFadeDuration3D?: number
 }
 
 /**
- * Popover - coordinates 2D (screen) and 3D (Billboard / Diegetic) popover text.
- * Use showText for 2D fullscreen; use showText3D for 3D in-scene (Billboard or Diegetic).
+ * Popover - 3D popover text (Billboard or Vertical). Use showText3D for in-scene popovers.
  * Call configure() once at app init to set project-wide defaults (e.g. font family).
  */
 export class Popover {
   private static instance: Popover
   private static configured: PopoverConfigureOptions = {}
-  private fontFamily = POPOVER_CONFIG.DEFAULT_FONT_FAMILY
-  private fontSize = POPOVER_CONFIG.DEFAULT_FONT_SIZE
+  private fontFamily: string = POPOVER_CONFIG.DEFAULT_FONT_FAMILY
+  private fontSize: number = POPOVER_CONFIG.DEFAULT_FONT_SIZE
+  /** Instance default for 3D mode (set from configure when getInstance runs). */
+  private defaultPositioningMode3D: Popover3DPositioningMode = POPOVER_CONFIG.POSITIONING_MODE_3D
 
-  private renderer: PopoverRenderer
-  private animator: PopoverAnimator
   private queue: PopoverQueue
   private renderer3D: Popover3DRenderer | undefined
 
-  constructor(
-    renderer: PopoverRenderer = new PopoverRenderer(),
-    animator: PopoverAnimator = new PopoverAnimator(),
-    queue: PopoverQueue = new PopoverQueue(),
-  ) {
-    this.renderer = renderer
-    this.animator = animator
+  constructor(queue: PopoverQueue = new PopoverQueue()) {
     this.queue = queue
   }
 
@@ -61,33 +70,9 @@ export class Popover {
     return this.fontFamily
   }
 
-  setOnPanelCreated(callback: ((panelName: string) => void) | undefined): void {
-    this.renderer.setOnPanelCreated(callback)
-  }
-
-  async showText(
-    text: string,
-    color = 'rgba(205,205,205,0.78)',
-    outlineColor = 'rgba(0,0,0,0.78)',
-    outlineWidth = 3,
-  ): Promise<void> {
-    return this.queue.add(async () => {
-      const textElement = this.renderer.create(
-        this.fontFamily,
-        this.fontSize,
-        color,
-        outlineColor,
-        outlineWidth,
-      )
-      textElement.text = text
-      await this.animator.animateHide(textElement)
-      this.renderer.dispose()
-    })
-  }
-
   /**
    * Show 3D popover at world position.
-   * @param positioningMode - BILLBOARD (always face camera) or DIEGETIC (in-world, fixed orientation).
+   * @param positioningMode - BILLBOARD (always face camera) or VERTICAL (upright, Y-only at creation).
    */
   async showText3D(
     text: string,
@@ -96,12 +81,15 @@ export class Popover {
     color = 'rgba(205,205,205,0.78)',
     outlineColor = 'rgba(0,0,0,0.78)',
     outlineWidth = 3,
-    positioningMode: Popover3DPositioningMode = POPOVER_CONFIG.POSITIONING_MODE_3D,
+    positioningMode?: Popover3DPositioningMode,
   ): Promise<void> {
     return this.queue.add(async () => {
       if (!this.renderer3D) {
         this.renderer3D = new Popover3DRenderer()
       }
+
+      const mode: Popover3DPositioningMode =
+        positioningMode ?? this.defaultPositioningMode3D ?? POPOVER_CONFIG.POSITIONING_MODE_3D
 
       const animator3D = new Popover3DAnimator(scene)
       const mesh = this.renderer3D.create(
@@ -113,7 +101,7 @@ export class Popover {
         color,
         outlineColor,
         outlineWidth,
-        positioningMode,
+        mode,
       )
 
       await animator3D.animateHide(mesh)
@@ -123,7 +111,10 @@ export class Popover {
   }
 
   dispose(): void {
-    this.renderer.dispose()
+    if (this.renderer3D) {
+      this.renderer3D.dispose()
+      this.renderer3D = undefined
+    }
   }
 
   /**
@@ -131,12 +122,31 @@ export class Popover {
    */
   static configure(options: PopoverConfigureOptions): void {
     Popover.configured = { ...Popover.configured, ...options }
+    if (options.positioningMode3D !== undefined && Popover.instance) {
+      Popover.instance.defaultPositioningMode3D = options.positioningMode3D
+    }
     if (options.textureWidthPaddingFactor !== undefined)
       popoverRuntimeOverrides.textureWidthPaddingFactor = options.textureWidthPaddingFactor
     if (options.texture3DMinWidth !== undefined)
       popoverRuntimeOverrides.texture3DMinWidth = options.texture3DMinWidth
     if (options.texture3DMaxWidth !== undefined)
       popoverRuntimeOverrides.texture3DMaxWidth = options.texture3DMaxWidth
+    if (options.animationOffsetY3D !== undefined)
+      popoverRuntimeOverrides.animationOffsetY3D = options.animationOffsetY3D
+    if (options.scaleFactor3D !== undefined)
+      popoverRuntimeOverrides.scaleFactor3D = options.scaleFactor3D
+    if (options.planeBaseHeight3D !== undefined)
+      popoverRuntimeOverrides.planeBaseHeight3D = options.planeBaseHeight3D
+    if (options.renderingGroupId3D !== undefined)
+      popoverRuntimeOverrides.renderingGroupId3D = options.renderingGroupId3D
+    if (options.textureAlpha3D !== undefined)
+      popoverRuntimeOverrides.textureAlpha3D = options.textureAlpha3D
+    if (options.animationSpeed3D !== undefined)
+      popoverRuntimeOverrides.animationSpeed3D = options.animationSpeed3D
+    if (options.alphaFadeStart3D !== undefined)
+      popoverRuntimeOverrides.alphaFadeStart3D = options.alphaFadeStart3D
+    if (options.alphaFadeDuration3D !== undefined)
+      popoverRuntimeOverrides.alphaFadeDuration3D = options.alphaFadeDuration3D
   }
 
   static getInstance(fontFamily?: string): Popover {
@@ -144,8 +154,10 @@ export class Popover {
       Popover.instance = new Popover()
       const family = fontFamily ?? Popover.configured.fontFamily ?? POPOVER_CONFIG.DEFAULT_FONT_FAMILY
       const size = Popover.configured.fontSize ?? POPOVER_CONFIG.DEFAULT_FONT_SIZE
+      const mode3D = Popover.configured.positioningMode3D ?? POPOVER_CONFIG.POSITIONING_MODE_3D
       Popover.instance.setFontFamily(family)
       Popover.instance.setFontSize(size)
+      Popover.instance.defaultPositioningMode3D = mode3D
     }
     return Popover.instance
   }
