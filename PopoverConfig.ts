@@ -10,7 +10,7 @@ export enum Popover3DPositioningMode {
 // Configuration constants for Popover components
 export const POPOVER_CONFIG = {
   DEFAULT_FONT_SIZE: 22,
-  DEFAULT_FONT_FAMILY: 'Helvetica',
+  DEFAULT_FONT_FAMILY: 'open sans',
   ANIMATION_STEPS: 24,
   PIXEL_STEP: 2,
   FONT_SIZE_STEP: 0.4,
@@ -26,7 +26,20 @@ export const POPOVER_CONFIG = {
   POSITIONING_MODE_3D: Popover3DPositioningMode.BILLBOARD,
   ALPHA_FADE_START_3D: 0.7,
   ALPHA_FADE_DURATION_3D: 1000,
+  /** Extra width for 3D texture (multiplier on measured width) to avoid clipping last character. Default 1.2 = 20% padding. */
+  TEXTURE_3D_WIDTH_PADDING_FACTOR: 1.2,
+  /** Minimum width (px) for 3D texture. */
+  TEXTURE_3D_MIN_WIDTH: 256,
+  /** Maximum width (px) for 3D texture. */
+  TEXTURE_3D_MAX_WIDTH: 1024,
 } as const
+
+/** Runtime overrides (e.g. from Popover.configure()). Used by renderers. */
+export const popoverRuntimeOverrides: {
+  textureWidthPaddingFactor?: number
+  texture3DMinWidth?: number
+  texture3DMaxWidth?: number
+} = {}
 
 export interface PopoverAnimationConfig {
   startAlpha: number

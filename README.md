@@ -65,7 +65,7 @@ Call `configure()` once before any `getInstance()` so the singleton uses your de
 ```typescript
 import Popover from 'babylonjs-popover'
 
-Popover.configure({ fontFamily: 'Jingleberry', fontSize: 24 })
+Popover.configure({ fontFamily: 'Helvetica', fontSize: 24 })
 const popover = Popover.getInstance()
 ```
 
@@ -76,9 +76,48 @@ popover.setFontFamily('YourFont')
 popover.setFontSize(24)
 ```
 
+### 3D texture width (avoid clipping last character)
+
+Width is measured with `CanvasRenderingContext2D.measureText()` for the actual font, then multiplied by a padding factor (default 1.2 = 20% extra). If the last letter still clips (e.g. with some fonts), increase the factor:
+
+```typescript
+Popover.configure({
+  fontFamily: 'Jingleberry',
+  textureWidthPaddingFactor: 1.3,  // e.g. 30% extra width
+  // texture3DMinWidth: 256,
+  // texture3DMaxWidth: 1024,
+})
+```
+
+## Local development (test without publishing to npm)
+
+**Option A – `file:` dependency and same repo parent in Docker**
+
+1. Put `babylonjs-popover` next to your app (e.g. `your-app/` and `your-app/../babylonjs-popover/`).
+2. In your app’s `package.json`: `"babylonjs-popover": "file:../babylonjs-popover"`.
+3. In Docker, mount the parent so both paths exist, e.g. in `docker-compose.yml`:
+   ```yaml
+   volumes:
+     - .:/usr/src/app
+     - ../babylonjs-popover:/usr/src/babylonjs-popover
+   ```
+   and in `package.json` use `"file:/usr/src/babylonjs-popover"` only for local/Docker runs, or keep `file:../babylonjs-popover` and mount parent: `- ..:/usr/src` with `working_dir: /usr/src/app`.
+
+**Option B – `yarn link` (host only, not inside Docker)**
+
+```bash
+# In babylonjs-popover
+yarn link
+
+# In your app (on the host)
+yarn link babylonjs-popover
+```
+
+Then run your app on the host (e.g. `yarn dev`). To switch back to the published package: `yarn unlink babylonjs-popover` and `yarn install`.
+
 ## API
 
-- `Popover.configure({ fontFamily?, fontSize? })` – set project-wide defaults (call before `getInstance()`).
+- `Popover.configure({ fontFamily?, fontSize?, textureWidthPaddingFactor?, texture3DMinWidth?, texture3DMaxWidth? })` – set project-wide defaults (call before `getInstance()`).
 - `Popover.getInstance(fontFamily?)` – singleton.
 - `showText(text, color?, outlineColor?, outlineWidth?)` – 2D fullscreen popover (requires `babylonjs-gui`).
 - `showText3D(text, scene, position, color?, outlineColor?, outlineWidth?, positioningMode?)` – 3D popover; `positioningMode`: `BILLBOARD` (default) or `DIEGETIC` / `VERTICAL`.

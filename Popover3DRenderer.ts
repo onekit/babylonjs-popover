@@ -8,7 +8,11 @@ import {
   StandardMaterial,
   Vector3,
 } from 'babylonjs'
-import { POPOVER_CONFIG, Popover3DPositioningMode } from './PopoverConfig'
+import {
+  POPOVER_CONFIG,
+  Popover3DPositioningMode,
+  popoverRuntimeOverrides,
+} from './PopoverConfig'
 
 interface Popover3DTextureSize {
   width: number
@@ -35,7 +39,7 @@ export class Popover3DRenderer {
     outlineWidth: number,
     positioningMode: Popover3DPositioningMode = POPOVER_CONFIG.POSITIONING_MODE_3D,
   ): AbstractMesh {
-    const textureSize = this.calculateTextureSize(text, fontSize)
+    const textureSize = this.calculateTextureSize(text, fontFamily, fontSize)
 
     this.texture = new DynamicTexture('popover3DTexture', textureSize, scene, false)
     this.texture.hasAlpha = true
@@ -93,18 +97,45 @@ export class Popover3DRenderer {
     }
   }
 
-  private calculateTextureSize(text: string, fontSize: number): Popover3DTextureSize {
-    const minWidth = 256
-    const maxWidth = 1024
-    const approximateWidth = Math.min(
-      maxWidth,
-      Math.max(minWidth, Math.floor(text.length * fontSize * 0.8)),
-    )
+  private calculateTextureSize(
+    text: string,
+    fontFamily: string,
+    fontSize: number,
+  ): Popover3DTextureSize {
+    const canvasFontSize = fontSize * 2
+    const measuredWidth = this.measureTextWidth(text, fontFamily, canvasFontSize)
+    const paddingFactor =
+      popoverRuntimeOverrides.textureWidthPaddingFactor ??
+      POPOVER_CONFIG.TEXTURE_3D_WIDTH_PADDING_FACTOR ??
+      1.2
+    const minW =
+      popoverRuntimeOverrides.texture3DMinWidth ??
+      POPOVER_CONFIG.TEXTURE_3D_MIN_WIDTH ??
+      256
+    const maxW =
+      popoverRuntimeOverrides.texture3DMaxWidth ??
+      POPOVER_CONFIG.TEXTURE_3D_MAX_WIDTH ??
+      1024
+    const widthWithPadding = Math.ceil(measuredWidth * paddingFactor)
+    const clampedWidth = Math.min(maxW, Math.max(minW, widthWithPadding))
     const height = fontSize * 3
     return {
-      width: this.nextPowerOfTwo(approximateWidth),
+      width: this.nextPowerOfTwo(clampedWidth),
       height: this.nextPowerOfTwo(height),
     }
+  }
+
+  /** Measure text width with canvas (same font as draw) to avoid clipping. */
+  private measureTextWidth(text: string, fontFamily: string, fontSizePx: number): number {
+    if (typeof document === 'undefined' || !document.createElement) {
+      return Math.max(64, text.length * fontSizePx * 0.5)
+    }
+    const canvas = document.createElement('canvas')
+    const ctx = canvas.getContext('2d')
+    if (!ctx) return Math.max(64, text.length * fontSizePx * 0.5)
+    ctx.font = `${fontSizePx}px ${fontFamily}`
+    const metrics = ctx.measureText(text)
+    return metrics.width
   }
 
   private calculatePlaneSize(textureSize: Popover3DTextureSize): { width: number; height: number } {

@@ -2,13 +2,21 @@ import { Scene, Vector3 } from 'babylonjs'
 import { PopoverRenderer } from './PopoverRenderer'
 import { PopoverAnimator } from './PopoverAnimator'
 import { PopoverQueue } from './PopoverQueue'
-import { POPOVER_CONFIG, Popover3DPositioningMode } from './PopoverConfig'
+import {
+  POPOVER_CONFIG,
+  Popover3DPositioningMode,
+  popoverRuntimeOverrides,
+} from './PopoverConfig'
 import { Popover3DRenderer } from './Popover3DRenderer'
 import { Popover3DAnimator } from './Popover3DAnimator'
 
 export interface PopoverConfigureOptions {
   fontFamily?: string
   fontSize?: number
+  /** Extra width for 3D texture (multiplier on measured width). Default 1.2. */
+  textureWidthPaddingFactor?: number
+  texture3DMinWidth?: number
+  texture3DMaxWidth?: number
 }
 
 /**
@@ -119,10 +127,16 @@ export class Popover {
   }
 
   /**
-   * Set project-wide defaults (e.g. font family). Call before getInstance().
+   * Set project-wide defaults (e.g. font family, texture padding). Call before getInstance().
    */
   static configure(options: PopoverConfigureOptions): void {
     Popover.configured = { ...Popover.configured, ...options }
+    if (options.textureWidthPaddingFactor !== undefined)
+      popoverRuntimeOverrides.textureWidthPaddingFactor = options.textureWidthPaddingFactor
+    if (options.texture3DMinWidth !== undefined)
+      popoverRuntimeOverrides.texture3DMinWidth = options.texture3DMinWidth
+    if (options.texture3DMaxWidth !== undefined)
+      popoverRuntimeOverrides.texture3DMaxWidth = options.texture3DMaxWidth
   }
 
   static getInstance(fontFamily?: string): Popover {
