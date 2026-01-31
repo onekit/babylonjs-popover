@@ -4,6 +4,7 @@ import {
   POPOVER_CONFIG,
   Popover3DPositioningMode,
   popoverRuntimeOverrides,
+  type PopoverRuntimeOverrideKey,
 } from './PopoverConfig'
 import { Popover3DRenderer } from './Popover3DRenderer'
 import { Popover3DAnimator } from './Popover3DAnimator'
@@ -125,28 +126,25 @@ export class Popover {
     if (options.positioningMode3D !== undefined && Popover.instance) {
       Popover.instance.defaultPositioningMode3D = options.positioningMode3D
     }
-    if (options.textureWidthPaddingFactor !== undefined)
-      popoverRuntimeOverrides.textureWidthPaddingFactor = options.textureWidthPaddingFactor
-    if (options.texture3DMinWidth !== undefined)
-      popoverRuntimeOverrides.texture3DMinWidth = options.texture3DMinWidth
-    if (options.texture3DMaxWidth !== undefined)
-      popoverRuntimeOverrides.texture3DMaxWidth = options.texture3DMaxWidth
-    if (options.animationOffsetY3D !== undefined)
-      popoverRuntimeOverrides.animationOffsetY3D = options.animationOffsetY3D
-    if (options.scaleFactor3D !== undefined)
-      popoverRuntimeOverrides.scaleFactor3D = options.scaleFactor3D
-    if (options.planeBaseHeight3D !== undefined)
-      popoverRuntimeOverrides.planeBaseHeight3D = options.planeBaseHeight3D
-    if (options.renderingGroupId3D !== undefined)
-      popoverRuntimeOverrides.renderingGroupId3D = options.renderingGroupId3D
-    if (options.textureAlpha3D !== undefined)
-      popoverRuntimeOverrides.textureAlpha3D = options.textureAlpha3D
-    if (options.animationSpeed3D !== undefined)
-      popoverRuntimeOverrides.animationSpeed3D = options.animationSpeed3D
-    if (options.alphaFadeStart3D !== undefined)
-      popoverRuntimeOverrides.alphaFadeStart3D = options.alphaFadeStart3D
-    if (options.alphaFadeDuration3D !== undefined)
-      popoverRuntimeOverrides.alphaFadeDuration3D = options.alphaFadeDuration3D
+    const runtimeKeys: PopoverRuntimeOverrideKey[] = [
+      'textureWidthPaddingFactor',
+      'texture3DMinWidth',
+      'texture3DMaxWidth',
+      'animationOffsetY3D',
+      'scaleFactor3D',
+      'planeBaseHeight3D',
+      'renderingGroupId3D',
+      'textureAlpha3D',
+      'animationSpeed3D',
+      'alphaFadeStart3D',
+      'alphaFadeDuration3D',
+    ]
+    for (const key of runtimeKeys) {
+      const value = options[key]
+      if (value !== undefined) {
+        popoverRuntimeOverrides[key] = value
+      }
+    }
   }
 
   static getInstance(fontFamily?: string): Popover {

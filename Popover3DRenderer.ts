@@ -8,11 +8,7 @@ import {
   StandardMaterial,
   Vector3,
 } from 'babylonjs'
-import {
-  POPOVER_CONFIG,
-  Popover3DPositioningMode,
-  popoverRuntimeOverrides,
-} from './PopoverConfig'
+import { getConfig, POPOVER_CONFIG, Popover3DPositioningMode } from './PopoverConfig'
 
 interface Popover3DTextureSize {
   width: number
@@ -21,7 +17,6 @@ interface Popover3DTextureSize {
 
 /**
  * Popover3DRenderer - creates 3D popover meshes with text textures.
- * Supports Billboard (always face camera) and Diegetic (in-world, fixed orientation) modes.
  */
 export class Popover3DRenderer {
   private mesh: AbstractMesh | undefined
@@ -52,8 +47,7 @@ export class Popover3DRenderer {
     this.material.useAlphaFromDiffuseTexture = true
     this.material.emissiveTexture = this.texture
     this.material.emissiveColor = new Color3(1, 1, 1)
-    this.material.alpha =
-      popoverRuntimeOverrides.textureAlpha3D ?? POPOVER_CONFIG.TEXTURE_ALPHA_3D ?? 0.6
+    this.material.alpha = getConfig('textureAlpha3D', 0.6)
     this.material.backFaceCulling = false
     this.material.disableLighting = true
     this.material.alphaMode = Engine.ALPHA_COMBINE
@@ -68,9 +62,10 @@ export class Popover3DRenderer {
     this.mesh.position = position.clone()
     this.mesh.material = this.material
 
-    const mode = String(positioningMode)
-    const isBillboard = mode === 'billboard'
-    const isVertical = mode === 'vertical'
+    const isBillboard =
+      positioningMode === Popover3DPositioningMode.BILLBOARD || positioningMode === 'billboard'
+    const isVertical =
+      positioningMode === Popover3DPositioningMode.VERTICAL || positioningMode === 'vertical'
 
     if (isBillboard) {
       this.mesh.billboardMode = AbstractMesh.BILLBOARDMODE_ALL
@@ -81,8 +76,7 @@ export class Popover3DRenderer {
       }
     }
 
-    this.mesh.renderingGroupId =
-      popoverRuntimeOverrides.renderingGroupId3D ?? POPOVER_CONFIG.RENDERING_GROUP_ID_3D ?? 2
+    this.mesh.renderingGroupId = getConfig('renderingGroupId3D', 2)
 
     return this.mesh
   }
@@ -102,25 +96,21 @@ export class Popover3DRenderer {
     }
   }
 
+  /** Canvas font size multiplier for texture measurement and drawing (avoids duplicated magic number). */
+  private getCanvasFontSize(fontSize: number): number {
+    return fontSize * 2
+  }
+
   private calculateTextureSize(
     text: string,
     fontFamily: string,
     fontSize: number,
   ): Popover3DTextureSize {
-    const canvasFontSize = fontSize * 2
+    const canvasFontSize = this.getCanvasFontSize(fontSize)
     const measuredWidth = this.measureTextWidth(text, fontFamily, canvasFontSize)
-    const paddingFactor =
-      popoverRuntimeOverrides.textureWidthPaddingFactor ??
-      POPOVER_CONFIG.TEXTURE_3D_WIDTH_PADDING_FACTOR ??
-      1.2
-    const minW =
-      popoverRuntimeOverrides.texture3DMinWidth ??
-      POPOVER_CONFIG.TEXTURE_3D_MIN_WIDTH ??
-      256
-    const maxW =
-      popoverRuntimeOverrides.texture3DMaxWidth ??
-      POPOVER_CONFIG.TEXTURE_3D_MAX_WIDTH ??
-      1024
+    const paddingFactor = getConfig('textureWidthPaddingFactor', 1.2)
+    const minW = getConfig('texture3DMinWidth', 256)
+    const maxW = getConfig('texture3DMaxWidth', 1024)
     const widthWithPadding = Math.ceil(measuredWidth * paddingFactor)
     const clampedWidth = Math.min(maxW, Math.max(minW, widthWithPadding))
     const height = fontSize * 3
@@ -144,8 +134,7 @@ export class Popover3DRenderer {
   }
 
   private calculatePlaneSize(textureSize: Popover3DTextureSize): { width: number; height: number } {
-    const baseHeight =
-      (popoverRuntimeOverrides.planeBaseHeight3D ?? POPOVER_CONFIG.PLANE_BASE_HEIGHT_3D ?? 1) * 3
+    const baseHeight = getConfig('planeBaseHeight3D', 1) * 3
     const aspectRatio = textureSize.width / textureSize.height
     return {
       width: baseHeight * aspectRatio,
@@ -168,7 +157,7 @@ export class Popover3DRenderer {
 
     context.clearRect(0, 0, size.width, size.height)
 
-    const canvasFontSize = fontSize * 2
+    const canvasFontSize = this.getCanvasFontSize(fontSize)
     context.font = `${canvasFontSize}px ${fontFamily}`
     context.textAlign = 'center'
     context.textBaseline = 'middle'

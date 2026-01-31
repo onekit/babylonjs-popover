@@ -43,3 +43,31 @@ export const popoverRuntimeOverrides: {
   alphaFadeStart3D?: number
   alphaFadeDuration3D?: number
 } = {}
+
+export type PopoverRuntimeOverrideKey = keyof typeof popoverRuntimeOverrides
+
+const OVERRIDE_TO_CONFIG: Record<PopoverRuntimeOverrideKey, keyof typeof POPOVER_CONFIG> = {
+  textureWidthPaddingFactor: 'TEXTURE_3D_WIDTH_PADDING_FACTOR',
+  texture3DMinWidth: 'TEXTURE_3D_MIN_WIDTH',
+  texture3DMaxWidth: 'TEXTURE_3D_MAX_WIDTH',
+  animationOffsetY3D: 'ANIMATION_OFFSET_Y_3D',
+  scaleFactor3D: 'SCALE_FACTOR_3D',
+  planeBaseHeight3D: 'PLANE_BASE_HEIGHT_3D',
+  renderingGroupId3D: 'RENDERING_GROUP_ID_3D',
+  textureAlpha3D: 'TEXTURE_ALPHA_3D',
+  animationSpeed3D: 'ANIMATION_SPEED_3D',
+  alphaFadeStart3D: 'ALPHA_FADE_START_3D',
+  alphaFadeDuration3D: 'ALPHA_FADE_DURATION_3D',
+}
+
+/**
+ * Resolve config value: override ?? POPOVER_CONFIG ?? extraFallback.
+ * Use in Animator and Renderer to avoid repeating the same pattern.
+ */
+export function getConfig(
+  key: PopoverRuntimeOverrideKey,
+  extraFallback?: number,
+): number {
+  const configKey = OVERRIDE_TO_CONFIG[key]
+  return (popoverRuntimeOverrides[key] ?? POPOVER_CONFIG[configKey] ?? extraFallback) as number
+}

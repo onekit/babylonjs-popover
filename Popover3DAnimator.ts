@@ -1,5 +1,5 @@
 import { AbstractMesh, Scene, StandardMaterial, Vector3 } from 'babylonjs'
-import { POPOVER_CONFIG, popoverRuntimeOverrides } from './PopoverConfig'
+import { getConfig, POPOVER_CONFIG } from './PopoverConfig'
 
 /**
  * Popover3DAnimator - animates 3D popover mesh: fade out, move up, scale.
@@ -14,14 +14,9 @@ export class Popover3DAnimator {
     const startPosition = mesh.position.clone()
     const startScale = mesh.scaling.x
 
-    const offsetY =
-      popoverRuntimeOverrides.animationOffsetY3D ?? POPOVER_CONFIG.ANIMATION_OFFSET_Y_3D ?? 1.5
-    const scaleFactor =
-      popoverRuntimeOverrides.scaleFactor3D ?? POPOVER_CONFIG.SCALE_FACTOR_3D ?? 1.2
-    const speed3D =
-      popoverRuntimeOverrides.animationSpeed3D ??
-      POPOVER_CONFIG.ANIMATION_SPEED_3D ??
-      POPOVER_CONFIG.ANIMATION_SPEED
+    const offsetY = getConfig('animationOffsetY3D', 1.5)
+    const scaleFactor = getConfig('scaleFactor3D', 1.2)
+    const speed3D = getConfig('animationSpeed3D', POPOVER_CONFIG.ANIMATION_SPEED)
 
     const endAlpha = 0
     const endPosition = startPosition.add(new Vector3(0, offsetY, 0))
@@ -55,12 +50,8 @@ export class Popover3DAnimator {
   ): Promise<void> {
     return new Promise((resolve) => {
       const startTime = performance.now()
-      const fadeStart =
-        popoverRuntimeOverrides.alphaFadeStart3D ?? POPOVER_CONFIG.ALPHA_FADE_START_3D ?? 0.6
-      const fadeDuration =
-        popoverRuntimeOverrides.alphaFadeDuration3D ??
-        POPOVER_CONFIG.ALPHA_FADE_DURATION_3D ??
-        600
+      const fadeStart = getConfig('alphaFadeStart3D', 0.6)
+      const fadeDuration = getConfig('alphaFadeDuration3D', 600)
       const fadeStartTime = duration * fadeStart
       const fadeEndTime = Math.min(fadeStartTime + fadeDuration, duration)
 
